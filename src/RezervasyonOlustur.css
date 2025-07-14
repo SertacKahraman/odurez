@@ -1,0 +1,293 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: white;
+  overflow-x: hidden;
+}
+
+
+
+.rezervasyon-kapsayici {
+  background: white;
+  max-width: 1000px;
+  margin: 0;
+  margin-left: 300px;
+  padding: 40px 32px;
+  font-family: 'Space Grotesk', Arial, sans-serif;
+  color: #222;
+  overflow: visible;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.ana-baslik {
+  font-weight: 700;
+  text-align: left;
+  margin-bottom: 32px;
+  font-size: 50px;
+  margin-top: 0;
+  color: #222;
+  background: #F6F7F9;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+
+  /* Büyük ekranlarda soldan boşluk bırak */
+  @media (min-width: 769px) {
+    padding-left: 8px;
+  }
+}
+
+.form-genel-kapsayici {
+  gap: 32px;
+  padding: 0 12px;
+}
+
+.form-sol,
+.form-sag {
+  padding: 0 8px;
+}
+
+/* Diğer başlıklar (form alanlarının üstündeki açıklamalar) */
+.form-baslik {
+  font-weight: normal;
+  margin: 10px 0 5px 0;
+  font-size: 20px;
+  color: #0a0a0a;
+  font-family: 'Poppins', sans-serif;
+}
+
+
+select,
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  background-color: #F0EFFF;
+  /* Açık mor */
+  color: #8D91A0;
+  box-sizing: border-box;
+  font-family: 'Poppins', Arial, sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+select:hover,
+input[type="text"]:hover,
+textarea:hover {
+  background-color: #F0EFFF;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 60px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: #8D91A0;
+}
+
+.takvim-grup {
+  background-color: #F0EFFF;
+  /* Açık mor arka plan */
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* İnce çizgilerle ayırmak için */
+  border: 1px solid #ccc;
+}
+
+.takvim-kapsayici {
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px solid #bbb;
+  /* İnce çizgi */
+  padding-bottom: 12px;
+}
+
+.takvim-ust {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #222;
+}
+
+.takvim-ust button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #222;
+  padding: 5px 10px;
+  user-select: none;
+}
+
+.takvim-gunler {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  font-size: 16px;
+  color: #333;
+}
+
+.gun-etiketi {
+  font-weight: 700;
+  color: #000;
+}
+
+.gun-etiketi.haftasonu {
+  color: red;
+}
+
+.gun-kutusu-tarih {
+  padding: 6px 0;
+  background-color: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  color: #666;
+  user-select: none;
+}
+
+.gun-kutusu-tarih.haftasonu {
+  color: red;
+  font-weight: 700;
+}
+
+.gun-kutusu-tarih:hover {
+  text-decoration: underline;
+  color: #000;
+}
+
+.gun-kutusu-tarih.bugun {
+  font-weight: 700;
+  color: green;
+  text-decoration: underline;
+}
+
+/* Seçili tarih için */
+.gun-kutusu-tarih.secili-tarih {
+  font-weight: 700;
+  color: white;
+  background-color: #525E6F;
+  border-radius: 6px;
+}
+
+
+.saat-baslik {
+  margin: 0 0 10px 0;
+  font-weight: 700;
+  font-size: 16px;
+  color: #222;
+  text-align: center;
+}
+
+.saat-secimi {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.saat-secimi select {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  color: black;
+}
+
+.secili-saat-araligi {
+  margin-top: 8px;
+  text-align: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 14px;
+}
+
+
+.rezervasyonlar-listesi {
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  color: #333;
+  font-size: 14px;
+  max-height: 150px;
+  overflow-y: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid #bbb;
+  /* İnce çizgi */
+}
+
+.rezervasyonlar-listesi h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #222;
+  text-align: center;
+}
+
+.rezervasyonlar-listesi ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.rezervasyonlar-listesi li {
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+/* Rezervasyon oluştur butonu */
+.rezervasyon-olustur-butonu {
+  font-family: 'Poppins', sans-serif;
+  margin-top: 40px;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 400px;
+  align-self: flex-start;
+  padding: 14px 0;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  background-color: #4A4E68;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.rezervasyon-olustur-butonu:hover {
+  background-color: #282b3d;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-genel-kapsayici {
+    flex-direction: column;
+    padding: 0 2vw;
+  }
+
+  .rezervasyon-kapsayici {
+    margin-left: 0;
+    padding: 24px 8px;
+  }
+
+  .rezervasyon-olustur-butonu {
+    max-width: 100%;
+  }
+}
