@@ -257,7 +257,7 @@ const CalendarPage: React.FC = () => {
     async function getToken() {
         let token = localStorage.getItem('token');
         if (!token) {
-            const res = await fetch('http://10.15.0.13:8080/auth/login', {
+            const res = await fetch('http://10.15.0.15:8080/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: 'admin', password: 'admin123' })
@@ -275,10 +275,9 @@ const CalendarPage: React.FC = () => {
             setFacultyLoading(true);
             setFacultyError(null);
             try {
-                const token = await getToken();
-                const res = await fetch('http://10.15.0.13:8080/fakulteler', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                const token = localStorage.getItem('token');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : undefined;
+                const res = await fetch('http://10.15.0.15:8080/fakulteler', { headers });
                 if (!res.ok) throw new Error('Fakülte listesi alınamadı');
                 const data = await res.json();
                 setFaculties(data);
@@ -295,11 +294,10 @@ const CalendarPage: React.FC = () => {
     useEffect(() => {
         if (!selectedFaculty) return;
         async function fetchReservations() {
-            const token = await getToken();
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : undefined;
             if (!selectedFaculty) return; // null kontrolü
-            fetch(`http://10.15.0.13:8080/rezervasyonlar?fakulteId=${selectedFaculty.id}`, {
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
+            fetch(`http://10.15.0.15:8080/rezervasyonlar?fakulteId=${selectedFaculty.id}`, { headers })
                 .then(res => {
                     if (!res.ok) throw new Error('Rezervasyonlar alınamadı');
                     return res.json();
@@ -359,10 +357,9 @@ const CalendarPage: React.FC = () => {
         const startStr = start.toISOString().slice(0, 10);
         const endStr = end.toISOString().slice(0, 10);
         async function fetchWeekReservations() {
-            const token = await getToken();
-            const res = await fetch(`http://10.15.0.13:8080/rezervasyonlar?start=${startStr}&end=${endStr}&fakulteId=${selectedFaculty?.id}`, {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : undefined;
+            const res = await fetch(`http://10.15.0.15:8080/rezervasyonlar?start=${startStr}&end=${endStr}&fakulteId=${selectedFaculty?.id}`, { headers });
             if (!res.ok) return setWeekReservations([]);
             const data = await res.json();
             setWeekReservations(data);
@@ -540,559 +537,436 @@ const CalendarPage: React.FC = () => {
     };
 
     return (
-        <div className="calendar-root" style={{
-            display: 'flex',
-            flexDirection: 'row',
-            width: '100vw',
-            height: '100vh',
-            minWidth: 0,
-            minHeight: 0,
-            boxSizing: 'border-box',
-            background: '#F6F7F9',
-            overflow: 'hidden',
-        }}>
-            {/* Sidebar solda sabit */}
-            <aside className="calendar-sidebar" style={{
-                width: 300,
-                minWidth: 220,
-                maxWidth: 350,
-                height: '100vh',
-                position: 'relative',
+        <>
+            {/* Takvim kutusunun hemen üstüne fakülte seçme butonunu ekliyorum */}
+            <div id="faculty-dropdown-root" className="faculty-select-root" style={{ position: 'absolute', top: 48, left: 'calc(300px + 32px)', zIndex: 10 }}>
+                <button className="faculty-select" onClick={() => setFacultyDropdownOpen(v => !v)} disabled={facultyLoading || !!facultyError || faculties.length === 0}>
+                    <span className="faculty-select__icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 21V10.5L12 3L21 10.5V21H3Z" stroke="#222" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><rect x="7" y="14" width="2" height="4" fill="#222" /><rect x="15" y="14" width="2" height="4" fill="#222" /><rect x="11" y="14" width="2" height="4" fill="#222" /></svg>
+                    </span>
+                    {facultyLoading ? 'Yükleniyor...' : facultyError ? 'Fakülte bulunamadı' : (selectedFaculty?.name || 'Fakülte Seç')}
+                    <span className="faculty-select__arrow" style={{ marginLeft: 8, transition: 'transform 0.25s cubic-bezier(.4,2,.6,1)', transform: facultyDropdownOpen ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6L9 12L15 18" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </span>
+                </button>
+                {facultyDropdownOpen && faculties.filter(f => f.name).length > 0 && !facultyLoading && !facultyError && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 52,
+                        left: 0,
+                        minWidth: 320,
+                        background: '#fff',
+                        borderRadius: 14,
+                        boxShadow: '0 4px 24px #0002',
+                        border: '1.5px solid #e5e7eb',
+                        padding: '8px 0',
+                        zIndex: 1000
+                    }}>
+                        {faculties.filter(fac => fac.name).map(fac => (
+                            <div
+                                key={fac.id}
+                                onClick={() => { setSelectedFaculty(fac); setFacultyDropdownOpen(false); }}
+                                style={{
+                                    padding: '12px 24px',
+                                    fontFamily: 'Space Grotesk',
+                                    fontWeight: 500,
+                                    fontSize: 16,
+                                    color: fac.id === selectedFaculty?.id ? '#2563eb' : '#222',
+                                    background: fac.id === selectedFaculty?.id ? '#f3f6fa' : 'transparent',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.15s',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                {fac.name}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {/* Takvim kutusu */}
+            <div style={{
+                margin: 0,
+                width: '100%',
+                maxWidth: '100vw',
+                minWidth: 0,
+                background: '#fff',
+                boxShadow: '0 2px 16px #0001',
+                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
-                background: '#fff',
-                boxShadow: '2px 0 16px #0001',
-                zIndex: 2,
-                boxSizing: 'border-box',
                 overflow: 'hidden',
+                padding: '16px 24px 12px 24px',
+                boxSizing: 'border-box',
+                position: 'relative',
+                height: '100%',
+                minHeight: 0,
+                paddingBottom: 40,
             }}>
-                <div className="calendar-logo">
-                    <img src="/logo1yatay.png" alt="Ordu Üniversitesi Logo" style={{ width: '100%', maxWidth: 180, height: 'auto' }} />
-                </div>
-                <div className="calendar-title" style={{ textAlign: 'center', width: '100%' }}>Salon Rezervasyon Sistemi</div>
-                <div className="calendar-search">
-                    <input type="text" placeholder="Rezervasyon Ara" />
-                    <span className="calendar-search-icon"></span>
-                </div>
-                <div className="calendar-menu">
-                    <div className="calendar-menu-item" style={{ color: view === 'month' || view === 'week' ? '#111' : '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }}>
-                        <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6, color: view === 'month' || view === 'week' ? '#111' : '#6B7280' }}>
-                            {/* Takvim ikonu SVG */}
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke={view === 'month' || view === 'week' ? '#111' : '#6B7280'} strokeWidth="1.7" /><path d="M16 3v4M8 3v4" stroke={view === 'month' || view === 'week' ? '#111' : '#6B7280'} strokeWidth="1.7" strokeLinecap="round" /><path d="M3 9h18" stroke={view === 'month' || view === 'week' ? '#111' : '#6B7280'} strokeWidth="1.7" /></svg>
-                        </span>
-                        Takvim
-                    </div>
-                    {/* TEACHER ve ADMIN için ek menüler */}
-                    {user && (user.role === 'TEACHER' || user.role === 'ADMIN') && (
-                        <>
-                            <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }}
-                                onClick={() => navigate('/rezervasyon-olustur')}
-                            >
-                                <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6 }}>
-                                    {/* Artı ikonu SVG */}
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#6B7280" strokeWidth="1.7" strokeLinecap="round" /></svg>
-                                </span>
-                                Rezervasyon Oluştur
-                            </div>
-                            <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }}>
-                                <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6 }}>
-                                    {/* Liste ikonu SVG */}
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="2" rx="1" fill="#6B7280" /><rect x="4" y="11" width="16" height="2" rx="1" fill="#6B7280" /><rect x="4" y="16" width="16" height="2" rx="1" fill="#6B7280" /></svg>
-                                </span>
-                                Rezervasyonlarım
-                            </div>
-                        </>
-                    )}
-                    {/* Sadece ADMIN için ayarlar menüsü */}
-                    {user && user.role === 'ADMIN' && (
-                        <>
-                            <div
-                                className="calendar-menu-item"
-                                style={{ color: '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18, display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                                onClick={() => setSettingsOpen(v => !v)}
-                            >
-                                <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6, color: '#6B7280' }}>
-                                    {/* Modern sade dişli çark (gear) ikonu SVG */}
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.06-.94l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.61-.22l-2.39.96a7.03 7.03 0 00-1.62-.94l-.36-2.53A.5.5 0 0014 2h-4a.5.5 0 00-.5.42l-.36 2.53a7.03 7.03 0 00-1.62.94l-2.39-.96a.5.5 0 00-.61.22l-1.92 3.32a.5.5 0 00.12.64l2.03 1.58c-.04.3-.06.61-.06.94s.02.64.06.94l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32a.5.5 0 00.61.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.53A.5.5 0 0010 22h4a.5.5 0 00.5-.42l.36-2.53c.58-.24 1.12-.56 1.62-.94l2.39.96a.5.5 0 00.61-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z" fill="#6B7280" />
+                {/* Başlık ve ay/hafta çubuğu kutu içinde, margin-bottom ile ayrık */}
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                        {view === 'week' ? (
+                            <>
+                                <button onClick={handlePrevWeek} style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="15 6 9 12 15 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
-                                </span>
-                                Ayarlar
-                                <span style={{ marginLeft: 'auto', marginTop: 2, transition: 'transform 0.2s', display: 'flex', alignItems: 'flex-end' }}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ transform: settingsOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
-                                        <polyline points="8 5 16 12 8 19" stroke="#6B7280" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                </button>
+                                <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 40, margin: 0, color: '#111' }}>{getWeekTitle(currentWeekStart)}</span>
+                                <button onClick={handleNextWeek} style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="9 6 15 12 9 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
-                                </span>
-                            </div>
-                            {settingsOpen && (
-                                <div style={{ marginLeft: 8, marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
-                                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 16, borderLeft: '1.5px solid #D1D5DB', zIndex: 0 }} />
-                                    <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 500, fontSize: 15, paddingLeft: 24, marginBottom: 8, background: 'none', boxShadow: 'none', zIndex: 1 }}>Bilgi Girişi</div>
-                                    <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 500, fontSize: 15, paddingLeft: 24, marginBottom: 0, background: 'none', boxShadow: 'none', zIndex: 1 }}>Tüm Rezervasyonlar</div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-                <div style={{ flex: 1 }} />
-                {/* Footer'ı kaldırıyorum */}
-                {/* Footer'ın içindeki kullanıcı/menü divini takvim gridinin hemen altına ekliyorum: */}
-                <div style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    padding: '8px 16px 0 0',
-                    boxSizing: 'border-box',
-                    gap: 12,
-                }}>
-                    {/* Kullanıcı bilgisi ve menü kodu buraya taşındı */}
-                    <span className="calendar-footer-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', width: '100%', marginLeft: 0, gap: 8, cursor: 'pointer', paddingLeft: 16, marginBottom: 16 }} onClick={() => { if (!user) navigate('/login'); }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ verticalAlign: 'middle' }}><circle cx="12" cy="8" r="4" stroke="#24242C" strokeWidth="1.7" /><path d="M4 19c0-2.5 3.5-4 8-4s8 1.5 8 4" stroke="#24242C" strokeWidth="1.7" /></svg>
-                        {user ? user.username : 'Giriş Yap'}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', marginBottom: 16, gap: 8, cursor: user ? 'pointer' : 'default', position: 'relative' }} onClick={user ? () => setShowLogoutMenu(v => !v) : undefined}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ verticalAlign: 'middle' }}><circle cx="12" cy="5" r="1.5" fill="#24242C" /><circle cx="12" cy="12" r="1.5" fill="#24242C" /><circle cx="12" cy="19" r="1.5" fill="#24242C" /></svg>
-                        {showLogoutMenu && (
-                            <div style={{ position: 'absolute', bottom: 32, right: 0, background: '#fff', border: '1px solid #eee', borderRadius: 10, boxShadow: '0 4px 24px #0002', padding: '12px 20px', zIndex: 10000, minWidth: 120 }}>
-                                <button onClick={handleLogout} style={{ width: '100%', background: '#ff3b3b', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 0', fontWeight: 600, fontFamily: 'Space Grotesk', fontSize: 15, cursor: 'pointer' }}>Çıkış Yap</button>
-                            </div>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }} onClick={handlePrevMonth}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="15 6 9 12 15 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </button>
+                                <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 40, margin: 0, color: '#111' }}>
+                                    {monthNames[currentMonth]} {currentYear}
+                                </h1>
+                                <button style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }} onClick={handleNextMonth}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="9 6 15 12 9 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </button>
+                            </>
                         )}
-                    </span>
+                    </div>
+                    <div style={{ display: 'flex', background: '#F3F4F6', borderRadius: 8, overflow: 'hidden', width: 200, boxShadow: '0 1px 4px #0001', border: '1.5px solid #E5E7EB', marginTop: 8 }}>
+                        <button
+                            style={{
+                                flex: 1,
+                                padding: '10px 0',
+                                background: view === 'month' ? '#fff' : '#F3F4F6',
+                                border: view === 'month' ? '1.5px solid #E5E7EB' : 'none',
+                                fontWeight: 600,
+                                fontSize: 17,
+                                color: view === 'month' ? '#111' : '#6B7280',
+                                borderRadius: view === 'month' ? '8px 0 0 8px' : 0,
+                                boxShadow: view === 'month' ? '0 2px 8px #2563eb22' : 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                outline: 'none',
+                                zIndex: view === 'month' ? 1 : 0
+                            }}
+                            onClick={() => setView('month')}
+                        >
+                            Ay
+                        </button>
+                        <button
+                            style={{
+                                flex: 1,
+                                padding: '10px 0',
+                                background: view === 'week' ? '#fff' : '#F3F4F6',
+                                border: view === 'week' ? '1.5px solid #E5E7EB' : 'none',
+                                fontWeight: 600,
+                                fontSize: 17,
+                                color: view === 'week' ? '#111' : '#6B7280',
+                                borderRadius: view === 'week' ? '0 8px 8px 0' : 0,
+                                boxShadow: view === 'week' ? '0 2px 8px #2563eb22' : 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                outline: 'none',
+                                zIndex: view === 'week' ? 1 : 0
+                            }}
+                            onClick={() => setView('week')}
+                        >
+                            Hafta
+                        </button>
+                    </div>
                 </div>
-            </aside>
-            {/* Ana içerik: üst bar ve takvim kutusu */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', minHeight: '100vh' }}>
-                {/* Takvim kutusunun hemen üstüne fakülte seçme butonunu ekliyorum */}
-                <div id="faculty-dropdown-root" className="faculty-select-root" style={{ position: 'absolute', top: 48, left: 'calc(300px + 32px)', zIndex: 10 }}>
-                    <button className="faculty-select" onClick={() => setFacultyDropdownOpen(v => !v)} disabled={facultyLoading || !!facultyError || faculties.length === 0}>
-                        <span className="faculty-select__icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 21V10.5L12 3L21 10.5V21H3Z" stroke="#222" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><rect x="7" y="14" width="2" height="4" fill="#222" /><rect x="15" y="14" width="2" height="4" fill="#222" /><rect x="11" y="14" width="2" height="4" fill="#222" /></svg>
-                        </span>
-                        {facultyLoading ? 'Yükleniyor...' : facultyError ? 'Fakülte bulunamadı' : (selectedFaculty?.name || 'Fakülte Seç')}
-                        <span className="faculty-select__arrow" style={{ marginLeft: 8, transition: 'transform 0.25s cubic-bezier(.4,2,.6,1)', transform: facultyDropdownOpen ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6L9 12L15 18" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        </span>
-                    </button>
-                    {facultyDropdownOpen && faculties.filter(f => f.name).length > 0 && !facultyLoading && !facultyError && (
-                        <div style={{
-                            position: 'absolute',
-                            top: 52,
-                            left: 0,
-                            minWidth: 320,
-                            background: '#fff',
-                            borderRadius: 14,
-                            boxShadow: '0 4px 24px #0002',
-                            border: '1.5px solid #e5e7eb',
-                            padding: '8px 0',
-                            zIndex: 1000
-                        }}>
-                            {faculties.filter(fac => fac.name).map(fac => (
-                                <div
-                                    key={fac.id}
-                                    onClick={() => { setSelectedFaculty(fac); setFacultyDropdownOpen(false); }}
+                {/* Gün isimleri satırı */}
+                {view === 'month' && (
+                    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', minHeight: 56, padding: 0, margin: 0, gap: 0, boxSizing: 'border-box', borderLeft: '1px solid #DCE0E5' }}>
+                        {['PAZARTESİ', 'SALI', 'ÇARŞAMBA', 'PERŞEMBE', 'CUMA', 'CUMARTESİ', 'PAZAR'].map((day, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    padding: 12,
+                                    gap: 10,
+                                    flex: 1,
+                                    minWidth: 0,
+                                    minHeight: 56,
+                                    background: '#F6F7F9',
+                                    border: '1px solid #DCE0E5',
+                                    boxSizing: 'border-box'
+                                }}
+                            >
+                                <span
                                     style={{
-                                        padding: '12px 24px',
                                         fontFamily: 'Space Grotesk',
                                         fontWeight: 500,
-                                        fontSize: 16,
-                                        color: fac.id === selectedFaculty?.id ? '#2563eb' : '#222',
-                                        background: fac.id === selectedFaculty?.id ? '#f3f6fa' : 'transparent',
-                                        cursor: 'pointer',
-                                        transition: 'background 0.15s',
-                                        display: 'flex',
-                                        alignItems: 'center'
+                                        fontSize: 17,
+                                        lineHeight: '140%',
+                                        color: '#6F7C8E',
+                                        display: 'block',
+                                        textAlign: 'center'
                                     }}
                                 >
-                                    {fac.name}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                {/* Takvim kutusu */}
-                <div style={{
-                    margin: 0,
-                    width: '100%',
-                    maxWidth: '100vw',
-                    minWidth: 0,
-                    background: '#fff',
-                    boxShadow: '0 2px 16px #0001',
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    padding: '16px 24px 12px 24px',
-                    boxSizing: 'border-box',
-                    position: 'relative',
-                    height: '100%',
-                    minHeight: 0,
-                    paddingBottom: 40,
-                }}>
-                    {/* Başlık ve ay/hafta çubuğu kutu içinde, margin-bottom ile ayrık */}
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 24 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                            {view === 'week' ? (
-                                <>
-                                    <button onClick={handlePrevWeek} style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }}>
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                            <polyline points="15 6 9 12 15 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                    <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 40, margin: 0, color: '#111' }}>{getWeekTitle(currentWeekStart)}</span>
-                                    <button onClick={handleNextWeek} style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }}>
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                            <polyline points="9 6 15 12 9 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <button style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }} onClick={handlePrevMonth}>
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                            <polyline points="15 6 9 12 15 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                    <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 40, margin: 0, color: '#111' }}>
-                                        {monthNames[currentMonth]} {currentYear}
-                                    </h1>
-                                    <button style={{ border: '1px solid #E5E7EB', background: '#fff', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible', padding: 0, cursor: 'pointer' }} onClick={handleNextMonth}>
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                            <polyline points="9 6 15 12 9 18" stroke="#111" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                        <div style={{ display: 'flex', background: '#F3F4F6', borderRadius: 8, overflow: 'hidden', width: 200, boxShadow: '0 1px 4px #0001', border: '1.5px solid #E5E7EB', marginTop: 8 }}>
-                            <button
-                                style={{
-                                    flex: 1,
-                                    padding: '10px 0',
-                                    background: view === 'month' ? '#fff' : '#F3F4F6',
-                                    border: view === 'month' ? '1.5px solid #E5E7EB' : 'none',
-                                    fontWeight: 600,
-                                    fontSize: 17,
-                                    color: view === 'month' ? '#111' : '#6B7280',
-                                    borderRadius: view === 'month' ? '8px 0 0 8px' : 0,
-                                    boxShadow: view === 'month' ? '0 2px 8px #2563eb22' : 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    outline: 'none',
-                                    zIndex: view === 'month' ? 1 : 0
-                                }}
-                                onClick={() => setView('month')}
-                            >
-                                Ay
-                            </button>
-                            <button
-                                style={{
-                                    flex: 1,
-                                    padding: '10px 0',
-                                    background: view === 'week' ? '#fff' : '#F3F4F6',
-                                    border: view === 'week' ? '1.5px solid #E5E7EB' : 'none',
-                                    fontWeight: 600,
-                                    fontSize: 17,
-                                    color: view === 'week' ? '#111' : '#6B7280',
-                                    borderRadius: view === 'week' ? '0 8px 8px 0' : 0,
-                                    boxShadow: view === 'week' ? '0 2px 8px #2563eb22' : 'none',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    outline: 'none',
-                                    zIndex: view === 'week' ? 1 : 0
-                                }}
-                                onClick={() => setView('week')}
-                            >
-                                Hafta
-                            </button>
-                        </div>
+                                    {day}
+                                </span>
+                            </div>
+                        ))}
                     </div>
-                    {/* Gün isimleri satırı */}
-                    {view === 'month' && (
-                        <div style={{ display: 'flex', flexDirection: 'row', width: '100%', minHeight: 56, padding: 0, margin: 0, gap: 0, boxSizing: 'border-box', borderLeft: '1px solid #DCE0E5' }}>
-                            {['PAZARTESİ', 'SALI', 'ÇARŞAMBA', 'PERŞEMBE', 'CUMA', 'CUMARTESİ', 'PAZAR'].map((day, i) => (
-                                <div
-                                    key={i}
-                                    style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        padding: 12,
-                                        gap: 10,
-                                        flex: 1,
-                                        minWidth: 0,
-                                        minHeight: 56,
-                                        background: '#F6F7F9',
-                                        border: '1px solid #DCE0E5',
-                                        boxSizing: 'border-box'
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            fontFamily: 'Space Grotesk',
-                                            fontWeight: 500,
-                                            fontSize: 17,
-                                            lineHeight: '140%',
-                                            color: '#6F7C8E',
-                                            display: 'block',
-                                            textAlign: 'center'
-                                        }}
-                                    >
-                                        {day}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {/* Takvim günleri grid'i */}
-                    {/* Haftalara bölünmüş grid: Satırdaki en fazla rezervasyon sayısına göre satır yüksekliği dinamik */}
-                    {/* Haftaları render et */}
-                    {view === 'month' ? (
-                        Array.from({ length: 5 }).map((_, weekIdx) => {
-                            const weekDaysArr = calendarDays.slice(weekIdx * 7, (weekIdx + 1) * 7);
-                            return (
-                                <div key={weekIdx} style={{ display: 'flex', flexDirection: 'row', width: '100%', flex: 1, borderBottom: weekIdx === 4 ? 'none' : '1px solid #DCE0E5', alignItems: 'stretch', minHeight: 0, margin: 0, padding: 0, gap: 0, boxSizing: 'border-box' }}>
-                                    {weekDaysArr.map((day, idx) => {
-                                        const dayReservations = day ? reservations.filter(r => {
-                                            const d = new Date(r.date);
-                                            return d.getFullYear() === currentYear && d.getMonth() === currentMonth && d.getDate() === day;
-                                        }) : [];
-                                        const shown = dayReservations.slice(0, 3);
-                                        const hiddenCount = dayReservations.length - 3;
-                                        return (
-                                            <div
-                                                key={idx}
-                                                className="calendar-day"
-                                                style={{
+                )}
+                {/* Takvim günleri grid'i */}
+                {/* Haftalara bölünmüş grid: Satırdaki en fazla rezervasyon sayısına göre satır yüksekliği dinamik */}
+                {/* Haftaları render et */}
+                {view === 'month' ? (
+                    Array.from({ length: 5 }).map((_, weekIdx) => {
+                        const weekDaysArr = calendarDays.slice(weekIdx * 7, (weekIdx + 1) * 7);
+                        return (
+                            <div key={weekIdx} style={{ display: 'flex', flexDirection: 'row', width: '100%', flex: 1, borderBottom: weekIdx === 4 ? 'none' : '1px solid #DCE0E5', alignItems: 'stretch', minHeight: 0, margin: 0, padding: 0, gap: 0, boxSizing: 'border-box' }}>
+                                {weekDaysArr.map((day, idx) => {
+                                    const dayReservations = day ? reservations.filter(r => {
+                                        const d = new Date(r.date);
+                                        return d.getFullYear() === currentYear && d.getMonth() === currentMonth && d.getDate() === day;
+                                    }) : [];
+                                    const shown = dayReservations.slice(0, 3);
+                                    const hiddenCount = dayReservations.length - 3;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className="calendar-day"
+                                            style={{
+                                                flex: 1,
+                                                minWidth: 0,
+                                                minHeight: 0,
+                                                position: 'relative',
+                                                borderRight: '1px solid #DCE0E5',
+                                                borderLeft: (idx === 0) ? '1px solid #DCE0E5' : 'none',
+                                                borderBottom: '1px solid #DCE0E5',
+                                                margin: 0,
+                                                padding: 0,
+                                                boxSizing: 'border-box',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'flex-start',
+                                                justifyContent: 'flex-start',
+                                                height: '100%',
+                                            }}
+                                        >
+                                            {/* Gün numarası */}
+                                            {day && (
+                                                <span style={{
+                                                    fontFamily: 'Space Grotesk',
+                                                    fontWeight: 700,
+                                                    fontSize: '1.2vw',
+                                                    color: '#14181F',
+                                                    padding: '8px 0 0 8px',
+                                                    lineHeight: 1,
+                                                    marginBottom: 6
+                                                }}>{day}</span>
+                                            )}
+                                            {/* Rezervasyon kutucukları */}
+                                            {day && (
+                                                <div style={{
                                                     flex: 1,
-                                                    minWidth: 0,
+                                                    width: '100%',
+                                                    overflowY: 'auto',
                                                     minHeight: 0,
-                                                    position: 'relative',
-                                                    borderRight: '1px solid #DCE0E5',
-                                                    borderLeft: (idx === 0) ? '1px solid #DCE0E5' : 'none',
-                                                    borderBottom: '1px solid #DCE0E5',
-                                                    margin: 0,
-                                                    padding: 0,
                                                     boxSizing: 'border-box',
+                                                    padding: '0 8px 6px 8px',
                                                     display: 'flex',
                                                     flexDirection: 'column',
-                                                    alignItems: 'flex-start',
                                                     justifyContent: 'flex-start',
-                                                    height: '100%',
-                                                }}
-                                            >
-                                                {/* Gün numarası */}
-                                                {day && (
-                                                    <span style={{
-                                                        fontFamily: 'Space Grotesk',
-                                                        fontWeight: 700,
-                                                        fontSize: '1.2vw',
-                                                        color: '#14181F',
-                                                        padding: '8px 0 0 8px',
-                                                        lineHeight: 1,
-                                                        marginBottom: 6
-                                                    }}>{day}</span>
-                                                )}
-                                                {/* Rezervasyon kutucukları */}
-                                                {day && (
-                                                    <div style={{
-                                                        flex: 1,
-                                                        width: '100%',
-                                                        overflowY: 'auto',
-                                                        minHeight: 0,
-                                                        boxSizing: 'border-box',
-                                                        padding: '0 8px 6px 8px',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        justifyContent: 'flex-start',
-                                                    }}>
-                                                        {shown.map((r, i) => (
-                                                            <div
-                                                                key={i}
-                                                                className={`calendar-event${r.tur ? ' ' + turToClass(r.tur) : ''}`}
-                                                                title={r.baslik}
-                                                                style={{
-                                                                    flex: 1,
-                                                                    minHeight: 0,
-                                                                    minWidth: 0,
-                                                                    width: '100%',
-                                                                    height: 'unset',
-                                                                    maxHeight: 'unset',
-                                                                    boxSizing: 'border-box',
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'flex-start', // sola yasla
-                                                                    padding: 0,
-                                                                    paddingLeft: 10,
-                                                                    margin: 0,
-                                                                    fontSize: '0.75vw',
-                                                                    cursor: 'pointer',
-                                                                    transition: 'background 0.15s, box-shadow 0.15s',
-                                                                    marginBottom: i === shown.length - 1 && hiddenCount <= 0 ? 0 : 6,
-                                                                    border: '1.5px solid #e5e7eb',
-                                                                    borderRadius: 14,
-                                                                    background: r.tur && r.tur.toUpperCase() === 'DİĞER' ? '#00CFFF' : r.tur ? turToColor(r.tur) : '#E5E7EB',
-                                                                }}
-                                                                onMouseEnter={e => {
-                                                                    // Tür rengine göre koyulaştır
-                                                                    const color = r.tur ? turToColor(r.tur) : '';
-                                                                    if (color) {
-                                                                        e.currentTarget.style.background = darkenColor(color, 0.8);
-                                                                    }
-                                                                }}
-                                                                onMouseLeave={e => {
-                                                                    e.currentTarget.style.background = '';
-                                                                }}
-                                                                onClick={e => {
-                                                                    setDetailReservation(r);
-                                                                    const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                                                    const modalWidth = 260;
-                                                                    const gap = 8;
-                                                                    const x = rect.right + modalWidth + gap < window.innerWidth ? rect.right + gap : rect.left - modalWidth - gap;
-                                                                    let y = rect.top;
-                                                                    setDetailModalPos({ x, y });
-                                                                    setShowDetailModal(true);
-                                                                }}
-                                                            >
-                                                                {r.baslik}
-                                                            </div>
-                                                        ))}
-                                                        {hiddenCount > 0 && (
-                                                            <button
-                                                                className="calendar-event"
-                                                                style={{
-                                                                    flex: 1,
-                                                                    minHeight: 0,
-                                                                    minWidth: 0,
-                                                                    width: '100%',
-                                                                    height: 'unset',
-                                                                    maxHeight: 'unset',
-                                                                    boxSizing: 'border-box',
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'flex-start', // sola yasla
-                                                                    padding: 0,
-                                                                    paddingLeft: 10,
-                                                                    margin: 0,
-                                                                    fontSize: '0.75vw',
-                                                                    background: '#E5E7EB',
-                                                                    color: '#222',
-                                                                    fontWeight: 500,
-                                                                    fontFamily: 'Space Grotesk',
-                                                                    border: '1.5px solid #e5e7eb',
-                                                                    borderRadius: 14,
-                                                                    cursor: 'pointer',
-                                                                    transition: 'background 0.15s, box-shadow 0.15s',
-                                                                    marginBottom: 0
-                                                                }}
-                                                                onMouseEnter={e => {
-                                                                    // +N butonu için arka planı koyulaştır
-                                                                    e.currentTarget.style.background = darkenColor('#E5E7EB', 0.8);
-                                                                }}
-                                                                onMouseLeave={e => {
-                                                                    e.currentTarget.style.background = '#E5E7EB';
-                                                                }}
-                                                                onClick={e => {
-                                                                    setModalReservations(dayReservations);
-                                                                    setModalDate(dayReservations[0]?.date || null);
-                                                                    setShowModal(true);
-                                                                    // Mouse pozisyonunu al
-                                                                    const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                                                    // Sağda yer varsa sağda, yoksa solda aç
-                                                                    const gap = 8;
-                                                                    const x = rect.right + 340 < window.innerWidth ? rect.right + gap : rect.left - 340;
-                                                                    const y = rect.top;
-                                                                    setModalPos({ x, y });
-                                                                }}
-                                                                title="Tüm rezervasyonları gör"
-                                                            >
-                                                                +{hiddenCount}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <WeekView
-                            currentWeek={Array.from({ length: 7 }).map((_, i) => {
-                                const d = new Date(currentWeekStart);
-                                d.setDate(currentWeekStart.getDate() + i);
-                                return d;
-                            })}
-                            reservations={weekReservations}
-                            onReservationClick={(r, e) => {
-                                setDetailReservation(r);
-                                const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                const modalWidth = 260;
-                                const gap = 8;
-                                const x = rect.right + modalWidth + gap < window.innerWidth ? rect.right + gap : rect.left - modalWidth - gap;
-                                let y = rect.top;
-                                setDetailModalPos({ x, y });
-                                setShowDetailModal(true);
-                            }}
-                        />
-                    )}
+                                                }}>
+                                                    {shown.map((r, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className={`calendar-event${r.tur ? ' ' + turToClass(r.tur) : ''}`}
+                                                            title={r.baslik}
+                                                            style={{
+                                                                flex: 1,
+                                                                minHeight: 0,
+                                                                minWidth: 0,
+                                                                width: '100%',
+                                                                height: 'unset',
+                                                                maxHeight: 'unset',
+                                                                boxSizing: 'border-box',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'flex-start', // sola yasla
+                                                                padding: 0,
+                                                                paddingLeft: 10,
+                                                                margin: 0,
+                                                                fontSize: '0.75vw',
+                                                                cursor: 'pointer',
+                                                                transition: 'background 0.15s, box-shadow 0.15s',
+                                                                marginBottom: i === shown.length - 1 && hiddenCount <= 0 ? 0 : 6,
+                                                                border: '1.5px solid #e5e7eb',
+                                                                borderRadius: 14,
+                                                                background: r.tur && r.tur.toUpperCase() === 'DİĞER' ? '#00CFFF' : r.tur ? turToColor(r.tur) : '#E5E7EB',
+                                                            }}
+                                                            onMouseEnter={e => {
+                                                                // Tür rengine göre koyulaştır
+                                                                const color = r.tur ? turToColor(r.tur) : '';
+                                                                if (color) {
+                                                                    e.currentTarget.style.background = darkenColor(color, 0.8);
+                                                                }
+                                                            }}
+                                                            onMouseLeave={e => {
+                                                                e.currentTarget.style.background = '';
+                                                            }}
+                                                            onClick={e => {
+                                                                setDetailReservation(r);
+                                                                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                                                const modalWidth = 260;
+                                                                const gap = 8;
+                                                                const x = rect.right + modalWidth + gap < window.innerWidth ? rect.right + gap : rect.left - modalWidth - gap;
+                                                                let y = rect.top;
+                                                                setDetailModalPos({ x, y });
+                                                                setShowDetailModal(true);
+                                                            }}
+                                                        >
+                                                            {r.baslik}
+                                                        </div>
+                                                    ))}
+                                                    {hiddenCount > 0 && (
+                                                        <button
+                                                            className="calendar-event"
+                                                            style={{
+                                                                flex: 1,
+                                                                minHeight: 0,
+                                                                minWidth: 0,
+                                                                width: '100%',
+                                                                height: 'unset',
+                                                                maxHeight: 'unset',
+                                                                boxSizing: 'border-box',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'flex-start', // sola yasla
+                                                                padding: 0,
+                                                                paddingLeft: 10,
+                                                                margin: 0,
+                                                                fontSize: '0.75vw',
+                                                                background: '#E5E7EB',
+                                                                color: '#222',
+                                                                fontWeight: 500,
+                                                                fontFamily: 'Space Grotesk',
+                                                                border: '1.5px solid #e5e7eb',
+                                                                borderRadius: 14,
+                                                                cursor: 'pointer',
+                                                                transition: 'background 0.15s, box-shadow 0.15s',
+                                                                marginBottom: 0
+                                                            }}
+                                                            onMouseEnter={e => {
+                                                                // +N butonu için arka planı koyulaştır
+                                                                e.currentTarget.style.background = darkenColor('#E5E7EB', 0.8);
+                                                            }}
+                                                            onMouseLeave={e => {
+                                                                e.currentTarget.style.background = '#E5E7EB';
+                                                            }}
+                                                            onClick={e => {
+                                                                setModalReservations(dayReservations);
+                                                                setModalDate(dayReservations[0]?.date || null);
+                                                                setShowModal(true);
+                                                                // Mouse pozisyonunu al
+                                                                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                                                // Sağda yer varsa sağda, yoksa solda aç
+                                                                const gap = 8;
+                                                                const x = rect.right + 340 < window.innerWidth ? rect.right + gap : rect.left - 340;
+                                                                const y = rect.top;
+                                                                setModalPos({ x, y });
+                                                            }}
+                                                            title="Tüm rezervasyonları gör"
+                                                        >
+                                                            +{hiddenCount}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })
+                ) : (
+                    <WeekView
+                        currentWeek={Array.from({ length: 7 }).map((_, i) => {
+                            const d = new Date(currentWeekStart);
+                            d.setDate(currentWeekStart.getDate() + i);
+                            return d;
+                        })}
+                        reservations={weekReservations}
+                        onReservationClick={(r, e) => {
+                            setDetailReservation(r);
+                            const rect = (e.target as HTMLElement).getBoundingClientRect();
+                            const modalWidth = 260;
+                            const gap = 8;
+                            const x = rect.right + modalWidth + gap < window.innerWidth ? rect.right + gap : rect.left - modalWidth - gap;
+                            let y = rect.top;
+                            setDetailModalPos({ x, y });
+                            setShowDetailModal(true);
+                        }}
+                    />
+                )}
+            </div>
+            {/* Takvim kutusunun içindeki en son satıra footer divi ekliyorum: */}
+            {/* Bunu kaldırıp, legend divini takvim ana kutusunun sağ alt köşesine ekliyorum: */}
+            <div style={{
+                position: 'absolute',
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                flexFlow: 'wrap',
+                alignItems: 'center',
+                gap: 8,
+                zIndex: 100,
+                background: '#fff',
+                padding: '4px 24px 4px 12px',
+                borderRadius: 8,
+                minWidth: 0,
+                maxWidth: '100%',
+                boxSizing: 'border-box',
+            }}>
+                {/* Sınav */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF2D2D', display: 'inline-block' }} />
+                    <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Sınav</span>
                 </div>
-                {/* Takvim kutusunun içindeki en son satıra footer divi ekliyorum: */}
-                {/* Bunu kaldırıp, legend divini takvim ana kutusunun sağ alt köşesine ekliyorum: */}
-                <div style={{
-                    position: 'absolute',
-                    right: 0,
-                    bottom: 0,
-                    display: 'flex',
-                    flexFlow: 'wrap',
-                    alignItems: 'center',
-                    gap: 8,
-                    zIndex: 100,
-                    background: '#fff',
-                    padding: '4px 24px 4px 12px',
-                    borderRadius: 8,
-                    minWidth: 0,
-                    maxWidth: '100%',
-                    boxSizing: 'border-box',
-                }}>
-                    {/* Sınav */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF2D2D', display: 'inline-block' }} />
-                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Sınav</span>
-                    </div>
-                    {/* Ders */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0FC224', display: 'inline-block' }} />
-                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Ders</span>
-                    </div>
-                    {/* Etkinlik */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#AC10A1', display: 'inline-block' }} />
-                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Etkinlik</span>
-                    </div>
-                    {/* Sunum */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF9900', display: 'inline-block' }} />
-                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Sunum</span>
-                    </div>
-                    {/* Toplantı */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2F00FF', display: 'inline-block' }} />
-                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Toplantı</span>
-                    </div>
-                    {/* Diğer */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00CFFF', display: 'inline-block' }} />
-                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Diğer</span>
-                    </div>
+                {/* Ders */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0FC224', display: 'inline-block' }} />
+                    <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Ders</span>
+                </div>
+                {/* Etkinlik */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#AC10A1', display: 'inline-block' }} />
+                    <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Etkinlik</span>
+                </div>
+                {/* Sunum */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF9900', display: 'inline-block' }} />
+                    <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Sunum</span>
+                </div>
+                {/* Toplantı */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#2F00FF', display: 'inline-block' }} />
+                    <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Toplantı</span>
+                </div>
+                {/* Diğer */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00CFFF', display: 'inline-block' }} />
+                    <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', color: '#000' }}>Diğer</span>
                 </div>
             </div>
             {/* Modal */}
@@ -1363,7 +1237,7 @@ const CalendarPage: React.FC = () => {
                     </div>
                 )
             }
-        </div >
+        </>
     );
 };
 

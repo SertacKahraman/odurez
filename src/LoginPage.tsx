@@ -8,7 +8,7 @@ const LoginPage: React.FC = () => {
 
     // Giriş butonuna tıklanınca login isteği at
     const handleLogin = async () => {
-        const res = await fetch('http://10.15.0.13:8080/auth/login', {
+        const res = await fetch('http://10.15.0.15:8080/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: email, password })
@@ -25,7 +25,32 @@ const LoginPage: React.FC = () => {
         }
         localStorage.setItem('token', token);
         // Kullanıcı adı ve rolü backend'den gelen user objesinden alınacak
-        localStorage.setItem('user', JSON.stringify({ username: data.user?.username || email, role: data.user?.role || data.role }));
+        let role = data.user?.role || data.role;
+        // Eğer user array ise (bazı backendlerde olabilir)
+        if (!role && Array.isArray(data.user) && data.user.length > 0) {
+            role = data.user[0].role;
+        }
+        // Eğer hala yoksa, token'dan çözümle (JWT ise)
+        if (!role && token) {
+            try {
+                const payload = token.split('.')[1];
+                if (payload) {
+                    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+                    role = decoded.role || (decoded.authorities && decoded.authorities[0]?.authority?.replace('ROLE_', ''));
+                }
+            } catch { }
+        }
+        let userId = data.user?.id;
+        if (!userId && token) {
+            try {
+                const payload = token.split('.')[1];
+                if (payload) {
+                    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+                    userId = decoded.id || decoded.userId || decoded.sub || null;
+                }
+            } catch { }
+        }
+        localStorage.setItem('user', JSON.stringify({ id: userId, username: data.user?.username || email, role }));
         // Giriş sonrası ana sayfaya yönlendir
         window.location.href = '/';
     };
