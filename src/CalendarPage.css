@@ -35,8 +35,11 @@ body,
 }
 
 .calendar-logo img {
-    width: 23px;
-    height: 29px;
+    width: 100%;
+    max-width: 180px;
+    height: auto;
+    display: block;
+    object-fit: contain;
 }
 
 .calendar-title {
@@ -52,6 +55,7 @@ body,
     align-items: center;
 }
 
+/* --- Rezervasyon Ara kutusu Figma referansı ile --- */
 .calendar-search {
     margin: 40px 0 0 13px;
     width: 251px;
@@ -67,13 +71,37 @@ body,
     width: 112px;
     height: 18px;
     border: none;
-    background: transparent;
+    background: #F6F8FA !important;
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 500;
     font-size: 14px;
     color: #898FA3;
     margin-left: 41px;
     outline: none;
+}
+
+.calendar-search input:focus,
+.calendar-search input:hover {
+    background: #F6F8FA !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.calendar-search input:-webkit-autofill,
+.calendar-search input:-webkit-autofill:focus,
+.calendar-search input:-webkit-autofill:hover {
+    -webkit-box-shadow: 0 0 0 1000px #F6F8FA inset !important;
+    box-shadow: 0 0 0 1000px #F6F8FA inset !important;
+    background: #F6F8FA !important;
+    color: #898FA3 !important;
+}
+
+.calendar-search input::placeholder {
+    color: #898FA3;
+    font-size: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    opacity: 1;
+    font-weight: 500;
 }
 
 .calendar-search-icon {
@@ -83,10 +111,13 @@ body,
     width: 18px;
     height: 18px;
     background: url('/search.svg') no-repeat center/contain;
+    filter: brightness(0) saturate(100%) invert(32%) sepia(6%) saturate(1100%) hue-rotate(186deg) brightness(92%) contrast(90%);
 }
 
+/* --- Figma arama kutusu sonu --- */
+
 .calendar-menu {
-    margin-top: 40px;
+    margin-top: 80px;
     display: flex;
     flex-direction: column;
     gap: 25px;

@@ -31,10 +31,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, navigate, view, setView, settin
             <img src="/logo1yatay.png" alt="Ordu Üniversitesi Logo" style={{ width: '100%', maxWidth: 180, height: 'auto' }} />
         </div>
         <div className="calendar-title" style={{ textAlign: 'center', width: '100%' }}>Salon Rezervasyon Sistemi</div>
-        <div className="calendar-search">
-            <input type="text" placeholder="Rezervasyon Ara" />
-            <span className="calendar-search-icon"></span>
-        </div>
         <div className="calendar-menu">
             <div className="calendar-menu-item" style={{ color: view === 'month' || view === 'week' ? '#111' : '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }} onClick={() => navigate('/')}>
                 <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6, color: view === 'month' || view === 'week' ? '#111' : '#6B7280' }}>

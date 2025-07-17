@@ -7,6 +7,7 @@ import MainLayout from './MainLayout';
 import TumRezervasyonlar from './TumRezervasyonlar';
 import './App.css';
 import BilgiGirisi from './BilgiGirisi';
+import RezervasyonDuzenle from './RezervasyonDuzenle';
 
 const Rezervasyonlarim = React.lazy(() => import('./Rezervasyonlarim'));
 
@@ -19,6 +20,7 @@ function App() {
         <Route path="/rezervasyonlarim" element={<MainLayout><React.Suspense fallback={<div>Yükleniyor...</div>}><Rezervasyonlarim /></React.Suspense></MainLayout>} />
         <Route path="/tum-rezervasyonlar" element={<MainLayout><TumRezervasyonlar /></MainLayout>} />
         <Route path="/bilgi-girisi" element={<MainLayout><BilgiGirisi /></MainLayout>} />
+        <Route path="/rezervasyon-duzenle/:id" element={<MainLayout><RezervasyonDuzenle /></MainLayout>} />
         <Route path="/" element={<MainLayout><CalendarPage /></MainLayout>} />
       </Routes>
     </BrowserRouter>

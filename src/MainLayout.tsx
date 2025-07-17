@@ -32,7 +32,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 setShowLogoutMenu={setShowLogoutMenu}
                 handleLogout={handleLogout}
             />
-            <div style={{ flex: 1, overflow: 'auto' }}>
+            <div style={{ flex: 1, overflow: 'auto', background: '#fff' }}>
                 {children}
             </div>
         </div>

@@ -45,6 +45,7 @@ const RezervasyonOlustur: React.FC = () => {
   const [fakulte, setFakulte] = useState('');
   const [fakulteler, setFakulteler] = useState<any[]>([]);
   const [fakulteYuklendi, setFakulteYuklendi] = useState(false);
+  const [salonlar, setSalonlar] = useState<any[]>([]);
 
   const [sinif, setSinif] = useState('');
   const [kullanimTuru, setKullanimTuru] = useState('');
@@ -56,13 +57,7 @@ const RezervasyonOlustur: React.FC = () => {
   const [tarih, setTarih] = useState(new Date());
   const [mesaj, setMesaj] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const mevcutRezervasyonlar = [
-    '15:00 - 17:00 Saatleri Arası Dolu',
-    '12:00 - 13:00 Saatleri Arası Dolu',
-    '09:00 - 10:00 Saatleri Arası Dolu',
-    '08:00 - 09:00 Saatleri Arası Dolu',
-  ];
+  const [mevcutRezervasyonlar, setMevcutRezervasyonlar] = useState<any[]>([]);
 
   // Haftanın günleri Pazartesi başlar, Pazar sona gelir
   const gunler = ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz'];
@@ -110,13 +105,49 @@ const RezervasyonOlustur: React.FC = () => {
   const fakulteGetir = async () => {
     if (fakulteYuklendi) return;
     try {
-      const response = await fetch('http://10.15.0.15:8080/kullanicilar');
+      const response = await fetch('http://10.15.0.15:8080/fakulteler');
       if (!response.ok) throw new Error('Sunucu hatası');
       const data = await response.json();
       setFakulteler(data);
       setFakulteYuklendi(true);
     } catch (error) {
       console.error('Fakülteler alınamadı:', error);
+    }
+  };
+
+  // Fakülte seçildiğinde salonları getir
+  const salonlariGetir = async (fakulteId: string) => {
+    setSalonlar([]);
+    setSinif('');
+    if (!fakulteId) return;
+    try {
+      const response = await fetch(`http://10.15.0.15:8080/salonlar?fakulteId=${fakulteId}`);
+      if (!response.ok) throw new Error('Salonlar alınamadı');
+      const data = await response.json();
+      setSalonlar(data);
+    } catch (error) {
+      console.error('Salonlar alınamadı:', error);
+    }
+  };
+
+  // Takvimden gün seçilince rezervasyonları getir
+  const rezervasyonlariGetir = async (gun: number | null, salonId: string) => {
+    setMevcutRezervasyonlar([]);
+    if (!gun) return;
+    try {
+      const tarihStr = `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+      const response = await fetch('http://10.15.0.15:8080/rezervasyonlar');
+      if (!response.ok) throw new Error('Rezervasyonlar alınamadı');
+      const data = await response.json();
+      // Tarih ve salon id'ye göre filtrele
+      const filtreli = data.filter((r: any) => {
+        const tarihUyan = r.date === tarihStr;
+        const salonUyan = salonId ? (r.salon && (r.salon.id == salonId)) : true;
+        return tarihUyan && salonUyan;
+      });
+      setMevcutRezervasyonlar(filtreli);
+    } catch (error) {
+      console.error('Rezervasyonlar alınamadı:', error);
     }
   };
 
@@ -144,7 +175,7 @@ const RezervasyonOlustur: React.FC = () => {
         baslangicSaati,
         bitisSaati
       };
-      const res = await fetch('http://10.15.0.13:8080/rezervasyonlar', {
+      const res = await fetch('http://10.15.0.15:8080/rezervasyonlar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,29 +201,27 @@ const RezervasyonOlustur: React.FC = () => {
           <p className="form-baslik">Fakülte veya Meslek Yüksekokulu Seçiniz</p>
           <select
             value={fakulte}
-            onChange={e => setFakulte(e.target.value)}
+            onChange={e => {
+              setFakulte(e.target.value);
+              salonlariGetir(e.target.value);
+            }}
             onClick={fakulteGetir}
           >
             <option value="" disabled hidden>Örn. Eğitim Fakültesi</option>
-            {fakulteler.length > 0 ? (
-              fakulteler.map((f: any, i) => (
-                <option key={i} value={f.id || f.ad}>{f.ad || f.name}</option>
-              ))
-            ) : (
-              <>
-                <option value="Eğitim Fakültesi">Eğitim Fakültesi</option>
-                <option value="Mühendislik Fakültesi">Mühendislik Fakültesi</option>
-                <option value="İktisadi ve İdari Bilimler">İktisadi ve İdari Bilimler</option>
-              </>
-            )}
+            {fakulteler.map((f: any, i: number) => (
+              <option key={i} value={f.id || f.ad}>{f.ad || f.name}</option>
+            ))}
           </select>
 
           <p className="form-baslik">Sınıf / Salon Seçiniz</p>
-          <select value={sinif} onChange={e => setSinif(e.target.value)} >
-            <option value="" disabled hidden>Örn. Amfi - 1</option>
-            <option value="Amfi - 1">Amfi - 1</option>
-            <option value="Amfi - 2">Amfi - 2</option>
-            <option value="Derslik - 101">Derslik - 101</option>
+          <select value={sinif} onChange={e => {
+            setSinif(e.target.value);
+            rezervasyonlariGetir(seciliTarih, e.target.value);
+          }} disabled={!salonlar.length}>
+            <option value="" disabled hidden>Salon seçiniz</option>
+            {salonlar.map((s: any, i: number) => (
+              <option key={i} value={s.id || s.ad}>{s.ad || s.name}</option>
+            ))}
           </select>
 
           <p className="form-baslik">Kullanım Türünü Seçiniz</p>
@@ -250,7 +279,10 @@ const RezervasyonOlustur: React.FC = () => {
                     <div
                       key={i}
                       className={`gun-kutusu-tarih${isBugun ? ' bugun' : ''}${haftaninGunu === 5 || haftaninGunu === 6 ? ' haftasonu' : ''}${seciliTarih === g ? ' secili-tarih' : ''}`}
-                      onClick={() => setSeciliTarih(g)}
+                      onClick={() => {
+                        setSeciliTarih(g);
+                        rezervasyonlariGetir(g, sinif);
+                      }}
                       style={{ fontWeight: seciliTarih === g ? 'bold' : 'normal' }}
                     >
                       {g}
@@ -279,11 +311,19 @@ const RezervasyonOlustur: React.FC = () => {
 
               <div className="rezervasyon-grubu">
                 <h3>Seçilen Gün ve Salona Ait Mevcut Rezervasyonlar</h3>
-                <ul>
-                  {mevcutRezervasyonlar.map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
+                {(!seciliTarih || !sinif) ? (
+                  <div style={{ color: '#888', fontSize: 14 }}>Gün ve salon seçiniz.</div>
+                ) : mevcutRezervasyonlar.length === 0 ? (
+                  <div style={{ color: '#888', fontSize: 14 }}>Bu gün ve salonda hiç rezervasyon yok.</div>
+                ) : (
+                  <ul>
+                    {mevcutRezervasyonlar.map((r, i) => (
+                      <li key={i}>
+                        {r.startTime?.slice(0, 5)} - {r.endTime?.slice(0, 5)} | {r.baslik} | {r.user?.firstName} {r.user?.lastName}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 

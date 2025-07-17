@@ -34,6 +34,8 @@ const Rezervasyonlarim = () => {
         }
     })();
 
+    const navigate = useNavigate();
+
     const tableRef = useRef<HTMLDivElement>(null);
 
     // Backend'den rezervasyonları çek
@@ -350,9 +352,8 @@ const Rezervasyonlarim = () => {
                                 <td>{safeCell(r.saat)}</td>
                                 <td>
                                     <div className="action-buttons">
-                                        <button className="action-btn" title="Düzenle">
-                                            {/* Düzenle ikonu */}
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 21h17" stroke="#6A6A65" strokeWidth="1.5" strokeLinecap="round" /><path d="M17.804 3.553a2.013 2.013 0 0 1 2.85 2.846l-9.5 9.5-3.5.654.654-3.5 9.496-9.5Z" stroke="#6A6A65" strokeWidth="1.5" strokeLinejoin="round" /></svg>
+                                        <button className="action-btn" onClick={() => navigate(`/rezervasyon-duzenle/${r.id}`)} title="Düzenle">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 21h17" stroke="#4A4E68" strokeWidth="1.5" strokeLinecap="round" /><path d="M12.5 6.5l5 5L7 22H2v-5l10.5-10.5z" stroke="#4A4E68" strokeWidth="1.5" strokeLinejoin="round" /></svg>
                                         </button>
                                         <button className="action-btn" title="Sil" onClick={() => handleDeleteClick(r.id)}>
                                             {/* Sil ikonu */}

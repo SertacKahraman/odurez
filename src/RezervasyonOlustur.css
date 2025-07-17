@@ -1,3 +1,32 @@
+/* Google Fonts - Space Grotesk */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap');
+
+/* Global font ve renk */
+html,
+body,
+#root,
+.rezervasyon-olustur-root {
+  background: white !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  color: #222;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  overflow-y: hidden;
+}
+
+.rezervasyon-olustur-root {
+  width: 100vw;
+  height: 100vh;
+  background: white;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  overflow-y: hidden;
+}
+
 /* === FORM GENEL === */
 .form-genel-kapsayici {
   display: flex;
@@ -5,47 +34,58 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
-  padding: 0 24px;
+  padding: 0 24px 0 24px;
   flex-wrap: wrap;
   background: white;
-  /* burası sabit */
   color: #222;
-  font-family: 'Poppins', sans-serif;
+  align-items: stretch;
+  position: relative;
+  margin-top: 0;
+  min-height: 80vh;
+  height: auto;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .ana-baslik {
+  margin-top: 24px;
+  padding-top: 0;
+  margin-bottom: 24px;
+  margin-left: 20px;
+  text-align: left;
   font-size: 50px;
   font-weight: 700;
   color: #222;
-  /* Koyu siyah */
-  margin: 24px 0 24px 40px;
-  text-align: left;
-  /* İstersen ortala */
+  font-family: 'Space Grotesk', sans-serif;
 }
-
 
 .form-sol,
 .form-sag {
   width: 48%;
   box-sizing: border-box;
   background: transparent;
-  /* varsa arkaplan kaldır */
   border: none;
-  /* varsa border kaldır */
   box-shadow: none;
-  /* varsa gölge kaldır */
+}
+
+.form-sol {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  height: 100%;
 }
 
 /* Takvim grubu için */
 .takvim-grup {
   background-color: #F0EFFF;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   border: 1.5px solid #ddd;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.05);
+  margin-top: 50px;
 }
 
 .takvim-kapsayici {
@@ -58,17 +98,14 @@
 .takvim-ust {
   display: flex;
   justify-content: space-between;
-  /* Butonlar kenarlara, ay-yıl ortada */
   align-items: center;
   padding: 0 12px;
-  /* Butonlar kenara çok yaslanmasın diye */
   font-weight: 700;
   margin-bottom: 14px;
   font-size: 18px;
   color: black;
   font-family: 'Space Grotesk', sans-serif;
 }
-
 
 .takvim-ust button {
   background: none;
@@ -92,33 +129,28 @@
   row-gap: 12px;
   font-size: 16px;
   color: #555;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .gun-etiketi {
   font-weight: 700;
   color: #222;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .gun-etiketi.haftasonu {
   color: #d32f2f;
-  /* kırmızı ton */
 }
 
 .gun-kutusu-tarih {
   border: none !important;
-  /* Kenarlıkları kaldır */
   background-color: transparent;
-  /* Arka planı şeffaf yap */
   padding: 0;
-  /* İç boşluk kaldır */
   margin: 0 4px;
-  /* Yatay boşluk */
   display: inline;
-  /* Satır içi öğe */
   font-weight: normal;
-  /* Normal yazı */
   cursor: pointer;
-  /* Tıklanabilir imleç */
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .gun-kutusu-tarih.haftasonu {
@@ -129,22 +161,15 @@
 .gun-kutusu-tarih.bugun {
   font-weight: 700;
   color: #2a78d0;
-  /* yeşilin daha doğal tonu */
   background-color: transparent;
-  /* arka plan yok */
   border: none;
-  /* çerçeve yok */
   text-decoration: none;
-  /* altı çizili yok */
   padding: 0;
-  /* ekstra boşluk kaldırıldı */
 }
-
-
 
 .gun-kutusu-tarih:hover {
   background-color: #adadb0;
-  color: black
+  color: black;
 }
 
 .gun-kutusu-tarih.secili-tarih {
@@ -159,16 +184,17 @@ select,
 input[type="text"],
 textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 16px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 15px;
   background-color: #F0EFFF;
-  /* Açık pastel mavi arka plan */
   color: #8D91A0;
-  font-family: 'Poppins', sans-serif;
   box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
   transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  min-height: 48px;
+  box-sizing: border-box;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 select:hover,
@@ -185,25 +211,28 @@ textarea:focus {
 
 textarea {
   resize: none;
-  min-height: 100px;
+  min-height: 190px;
   margin-top: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  width: 100%;
+  min-width: 350px;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
 }
 
-/* === YENİ: Saat ve Rezervasyon Grupları için morumsu arka plan === */
-
+/* Saat ve Rezervasyon Grupları için morumsu arka plan */
 .saat-ve-rezervasyon-gruplari {
   display: block;
   margin-top: 10px;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .saat-grubu {
   border-bottom: 1.5px solid #ccc;
-  /* İstediğin renk ve kalınlık */
   padding-bottom: 12px;
-  /* Çizgi ile içeriğin arasında boşluk */
   margin-bottom: 12px;
-  /* Alt tarafta da boşluk */
 }
 
 .rezervasyon-grubu h3 {
@@ -211,18 +240,16 @@ textarea {
   font-size: 18px;
   margin-bottom: 12px;
   color: #000000;
-  /* Doğru koyu mor renk */
   text-align: center;
+  font-family: 'Space Grotesk', sans-serif;
 }
-
-
 
 .saat-grubu .saat-baslik,
 .rezervasyon-grubu h3 {
   font-weight: 700;
   font-size: 18px;
   margin-bottom: 12px;
-  color: bl;
+  color: black;
   text-align: center;
   font-family: 'Space Grotesk', sans-serif;
 }
@@ -231,11 +258,11 @@ textarea {
   display: flex;
   gap: 14px;
   justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .saat-secimi select {
   width: 100px;
-  /* istediğin genişlik */
   padding: 8px 12px;
   border-radius: 50px;
   border: 1.5px solid #9a8fc0;
@@ -243,8 +270,9 @@ textarea {
   background-color: white;
   cursor: pointer;
   color: black;
-  font-family: 'Poppins', sans-serif;
   transition: border-color 0.3s ease;
+  min-height: auto;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .saat-secimi select:hover,
@@ -259,6 +287,7 @@ textarea {
   font-weight: 600;
   color: #0b0b0b;
   font-size: 14px;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .rezervasyon-grubu ul {
@@ -273,19 +302,19 @@ textarea {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid #ddd;
   list-style-type: none;
-  /* Noktaları kaldırır */
+  font-family: 'Space Grotesk', sans-serif;
 }
-
-
 
 /* Rezervasyon oluştur butonu */
 .rezervasyon-olustur-butonu {
-  font-family: 'Poppins', sans-serif;
-  margin-top: 40px;
+  font-family: 'Space Grotesk', sans-serif;
+  margin-top: 32px;
   margin-bottom: 16px;
-  width: 100%;
-  max-width: 400px;
-  align-self: flex-start;
+  margin-left: 0;
+  width: 220px;
+  min-width: 180px;
+  max-width: 220px;
+  align-self: center;
   padding: 14px 0;
   font-size: 18px;
   font-weight: 700;
@@ -295,6 +324,7 @@ textarea {
   color: white;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  box-sizing: border-box;
 }
 
 .rezervasyon-olustur-butonu:hover {
@@ -314,8 +344,11 @@ textarea {
   }
 
   .rezervasyon-olustur-butonu {
-    max-width: 100%;
+    width: 90vw;
+    min-width: 120px;
+    max-width: 98vw;
     margin-left: 0;
+    align-self: center;
   }
 
   .saat-ve-rezervasyon-gruplari {
