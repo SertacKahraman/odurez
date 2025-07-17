@@ -10,9 +10,10 @@ interface SidebarProps {
     showLogoutMenu: boolean;
     setShowLogoutMenu: (v: any) => void;
     handleLogout: () => void;
+    currentPath: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ user, navigate, view, setView, settingsOpen, setSettingsOpen, showLogoutMenu, setShowLogoutMenu, handleLogout }) => (
+const Sidebar: React.FC<SidebarProps> = ({ user, navigate, view, setView, settingsOpen, setSettingsOpen, showLogoutMenu, setShowLogoutMenu, handleLogout, currentPath }) => (
     <aside className="calendar-sidebar" style={{
         width: 300,
         minWidth: 220,
@@ -32,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, navigate, view, setView, settin
         </div>
         <div className="calendar-title" style={{ textAlign: 'center', width: '100%' }}>Salon Rezervasyon Sistemi</div>
         <div className="calendar-menu">
-            <div className="calendar-menu-item" style={{ color: view === 'month' || view === 'week' ? '#111' : '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }} onClick={() => navigate('/')}>
+            <div className="calendar-menu-item" style={{ color: (currentPath === '/' || currentPath === '/calendar' || currentPath === '/takvim') ? '#111' : '#6B7280', fontWeight: (currentPath === '/' || currentPath === '/calendar' || currentPath === '/takvim') ? 700 : 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }} onClick={() => navigate('/')}>
                 <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6, color: view === 'month' || view === 'week' ? '#111' : '#6B7280' }}>
                     {/* Takvim ikonu SVG */}
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke={view === 'month' || view === 'week' ? '#111' : '#6B7280'} strokeWidth="1.7" /><path d="M16 3v4M8 3v4" stroke={view === 'month' || view === 'week' ? '#111' : '#6B7280'} strokeWidth="1.7" strokeLinecap="round" /><path d="M3 9h18" stroke={view === 'month' || view === 'week' ? '#111' : '#6B7280'} strokeWidth="1.7" /></svg>
@@ -41,14 +42,14 @@ const Sidebar: React.FC<SidebarProps> = ({ user, navigate, view, setView, settin
             </div>
             {user && (user.role === 'TEACHER' || user.role === 'ADMIN') && (
                 <>
-                    <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }} onClick={() => navigate('/rezervasyon-olustur')}>
+                    <div className="calendar-menu-item" style={{ color: currentPath === '/rezervasyon-olustur' ? '#111' : '#6B7280', fontWeight: currentPath === '/rezervasyon-olustur' ? 700 : 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }} onClick={() => navigate('/rezervasyon-olustur')}>
                         <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6 }}>
                             {/* Artı ikonu SVG */}
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#6B7280" strokeWidth="1.7" strokeLinecap="round" /></svg>
                         </span>
                         Rezervasyon Oluştur
                     </div>
-                    <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }} onClick={() => navigate('/rezervasyonlarim')}>
+                    <div className="calendar-menu-item" style={{ color: currentPath === '/rezervasyonlarim' ? '#111' : '#6B7280', fontWeight: currentPath === '/rezervasyonlarim' ? 700 : 600, fontFamily: 'Space Grotesk, sans-serif', fontSize: 18 }} onClick={() => navigate('/rezervasyonlarim')}>
                         <span className="calendar-menu-icon" style={{ display: 'flex', alignItems: 'center', marginRight: 6 }}>
                             {/* Liste ikonu SVG */}
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="2" rx="1" fill="#6B7280" /><rect x="4" y="11" width="16" height="2" rx="1" fill="#6B7280" /><rect x="4" y="16" width="16" height="2" rx="1" fill="#6B7280" /></svg>
@@ -76,10 +77,10 @@ const Sidebar: React.FC<SidebarProps> = ({ user, navigate, view, setView, settin
                     {settingsOpen && (
                         <div style={{ marginLeft: 8, marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
                             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 16, borderLeft: '1.5px solid #D1D5DB', zIndex: 0 }} />
-                            <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 500, fontSize: 15, paddingLeft: 24, marginBottom: 8, background: 'none', boxShadow: 'none', zIndex: 1 }} onClick={() => navigate('/bilgi-girisi')}>
+                            <div className="calendar-menu-item" style={{ color: currentPath === '/bilgi-girisi' ? '#111' : '#6B7280', fontWeight: currentPath === '/bilgi-girisi' ? 700 : 500, fontSize: 15, paddingLeft: 24, marginBottom: 8, background: 'none', boxShadow: 'none', zIndex: 1 }} onClick={() => navigate('/bilgi-girisi')}>
                                 Bilgi Girişi
                             </div>
-                            <div className="calendar-menu-item" style={{ color: '#6B7280', fontWeight: 500, fontSize: 15, paddingLeft: 24, marginBottom: 0, background: 'none', boxShadow: 'none', zIndex: 1 }} onClick={() => navigate('/tum-rezervasyonlar')}>
+                            <div className="calendar-menu-item" style={{ color: currentPath === '/tum-rezervasyonlar' ? '#111' : '#6B7280', fontWeight: currentPath === '/tum-rezervasyonlar' ? 700 : 500, fontSize: 15, paddingLeft: 24, marginBottom: 0, background: 'none', boxShadow: 'none', zIndex: 1 }} onClick={() => navigate('/tum-rezervasyonlar')}>
                                 Tüm Rezervasyonlar
                             </div>
                         </div>

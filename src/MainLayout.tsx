@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const user = (() => {
@@ -14,6 +14,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [showLogoutMenu, setShowLogoutMenu] = useState(false);
     const navigate = useNavigate();
     const view = '';
+    const location = useLocation();
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -31,6 +32,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 showLogoutMenu={showLogoutMenu}
                 setShowLogoutMenu={setShowLogoutMenu}
                 handleLogout={handleLogout}
+                currentPath={location.pathname}
             />
             <div style={{ flex: 1, overflow: 'auto', background: '#fff' }}>
                 {children}
