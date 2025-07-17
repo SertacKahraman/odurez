@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './RezervasyonOlustur.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -59,6 +59,14 @@ const RezervasyonOlustur: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [mevcutRezervasyonlar, setMevcutRezervasyonlar] = useState<any[]>([]);
 
+  // Toast mesajı otomatik gizle
+  useEffect(() => {
+    if (mesaj) {
+      const timer = setTimeout(() => setMesaj(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [mesaj]);
+
   // Haftanın günleri Pazartesi başlar, Pazar sona gelir
   const gunler = ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz'];
   const aylar = [
@@ -96,7 +104,7 @@ const RezervasyonOlustur: React.FC = () => {
     return gunlerArray;
   };
 
-  const saatler24 = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+  const saatler24 = Array.from({ length: 15 }, (_, i) => `${(i + 7).toString().padStart(2, '0')}:00`);
 
   const bugun = new Date();
   const bugunGun = (bugun.getFullYear() === yil && bugun.getMonth() === ay) ? bugun.getDate() : null;
@@ -130,24 +138,21 @@ const RezervasyonOlustur: React.FC = () => {
     }
   };
 
-  // Takvimden gün seçilince rezervasyonları getir
-  const rezervasyonlariGetir = async (gun: number | null, salonId: string) => {
+  // Rezervasyonları getir
+  const rezervasyonlariGetir = async (gun: number | null, fakulteId: string) => {
     setMevcutRezervasyonlar([]);
-    if (!gun) return;
+    if (!gun || !fakulteId) return;
     try {
       const tarihStr = `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
       const response = await fetch('http://10.15.0.15:8080/rezervasyonlar');
-      if (!response.ok) throw new Error('Rezervasyonlar alınamadı');
       const data = await response.json();
-      // Tarih ve salon id'ye göre filtrele
-      const filtreli = data.filter((r: any) => {
-        const tarihUyan = r.date === tarihStr;
-        const salonUyan = salonId ? (r.salon && (r.salon.id == salonId)) : true;
-        return tarihUyan && salonUyan;
-      });
+      const filtreli = data.filter((r: any) =>
+        r.date === tarihStr &&
+        ((r.fakulte && r.fakulte.id == fakulteId) || (r.salon && r.salon.fakulte && r.salon.fakulte.id == fakulteId))
+      );
       setMevcutRezervasyonlar(filtreli);
-    } catch (error) {
-      console.error('Rezervasyonlar alınamadı:', error);
+    } catch (e) {
+      setMevcutRezervasyonlar([]);
     }
   };
 
@@ -164,16 +169,54 @@ const RezervasyonOlustur: React.FC = () => {
         setLoading(false);
         return;
       }
-      const tarihStr = `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')} -${String(gun).padStart(2, '0')}`;
+      // Tarih stringi
+      const tarihStr = `${tarih.getFullYear()}-${String(tarih.getMonth() + 1).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+      // Saat aralığı kontrolü
+      if (baslangicSaati === bitisSaati) {
+        setMesaj('Başlangıç ve bitiş saati aynı olamaz.');
+        setLoading(false);
+        return;
+      }
+      // Başlangıç saati bitiş saatinden geç olamaz
+      if (baslangicSaati > bitisSaati) {
+        setMesaj('Başlangıç saati, bitiş saatinden geç olamaz.');
+        setLoading(false);
+        return;
+      }
+      // Çakışma kontrolü
+      const cakisan = mevcutRezervasyonlar.some((r: any) => {
+        if (!r.salon || !r.startTime || !r.endTime) return false;
+        if (String(r.salon.id) !== String(sinif)) return false;
+        if (r.date !== tarihStr) return false;
+        // Saat çakışma kontrolü
+        const yeniBas = baslangicSaati;
+        const yeniBit = bitisSaati;
+        return (
+          (yeniBas < r.endTime && yeniBit > r.startTime)
+        );
+      });
+      if (cakisan) {
+        setMesaj('Bu saat aralığında bu salonda başka bir rezervasyon var!');
+        setLoading(false);
+        return;
+      }
+      // Payload oluştur
+      let currentUser = user;
+      if (!currentUser || !currentUser.id) {
+        try {
+          currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        } catch { }
+      }
       const payload = {
-        fakulte,
-        sinif,
-        tur: kullanimTuru,
+        fakulte: { id: fakulte },
+        salon: { id: sinif },
+        user: { id: currentUser?.id },
+        tur: kullanimTuru.toUpperCase(),
         baslik,
         aciklama,
-        tarih: tarihStr,
-        baslangicSaati,
-        bitisSaati
+        date: tarihStr,
+        startTime: baslangicSaati,
+        endTime: bitisSaati
       };
       const res = await fetch('http://10.15.0.15:8080/rezervasyonlar', {
         method: 'POST',
@@ -195,145 +238,176 @@ const RezervasyonOlustur: React.FC = () => {
   return (
     <div style={{ width: '100%', height: '100%', background: 'white' }}>
       <h1 className="ana-baslik">Rezervasyon Oluştur</h1>
-      {mesaj && <div style={{ marginBottom: 16, color: mesaj.startsWith('Hata') ? 'red' : 'green', fontWeight: 600 }}>{mesaj}</div>}
       <form className="form-genel-kapsayici" onSubmit={rezervasyonOlustur}>
-        <div className="form-sol">
-          <p className="form-baslik">Fakülte veya Meslek Yüksekokulu Seçiniz</p>
-          <select
-            value={fakulte}
-            onChange={e => {
-              setFakulte(e.target.value);
-              salonlariGetir(e.target.value);
-            }}
-            onClick={fakulteGetir}
-          >
-            <option value="" disabled hidden>Örn. Eğitim Fakültesi</option>
-            {fakulteler.map((f: any, i: number) => (
-              <option key={i} value={f.id || f.ad}>{f.ad || f.name}</option>
-            ))}
-          </select>
+        <div className="form-icerik">
+          <div className="form-sol">
+            <p className="form-baslik">Fakülte veya Meslek Yüksekokulu Seçiniz</p>
+            <select
+              value={fakulte}
+              onChange={e => {
+                setFakulte(e.target.value);
+                salonlariGetir(e.target.value); // Sadece salonlar ve salon seçimi sıfırlanacak
+                // setSinif(''); // Zaten salonlariGetir içinde setSinif('') var
+                rezervasyonlariGetir(seciliTarih, e.target.value);
+              }}
+              onClick={fakulteGetir}
+            >
+              <option value="" disabled hidden>Örn. Eğitim Fakültesi</option>
+              {fakulteler.map((f: any, i: number) => (
+                <option key={i} value={f.id || f.ad}>{f.ad || f.name}</option>
+              ))}
+            </select>
 
-          <p className="form-baslik">Sınıf / Salon Seçiniz</p>
-          <select value={sinif} onChange={e => {
-            setSinif(e.target.value);
-            rezervasyonlariGetir(seciliTarih, e.target.value);
-          }} disabled={!salonlar.length}>
-            <option value="" disabled hidden>Salon seçiniz</option>
-            {salonlar.map((s: any, i: number) => (
-              <option key={i} value={s.id || s.ad}>{s.ad || s.name}</option>
-            ))}
-          </select>
+            <p className="form-baslik">Sınıf / Salon Seçiniz</p>
+            <select value={sinif} onChange={e => {
+              setSinif(e.target.value);
+              rezervasyonlariGetir(seciliTarih, e.target.value);
+            }} disabled={!salonlar.length}>
+              <option value="" disabled hidden>Salon seçiniz</option>
+              {salonlar.map((s: any, i: number) => (
+                <option key={i} value={s.id || s.ad}>{s.ad || s.name}</option>
+              ))}
+            </select>
 
-          <p className="form-baslik">Kullanım Türünü Seçiniz</p>
-          <select value={kullanimTuru} onChange={e => setKullanimTuru(e.target.value)} >
-            <option value="" disabled hidden>Örn. Sınav</option>
-            <option value="Sınav">Sınav</option>
-            <option value="Ders">Ders</option>
-            <option value="Etkinlik">Etkinlik</option>
-            <option value="Sunum">Sunum</option>
-            <option value="Toplantı">Toplantı</option>
-            <option value="Diğer">Diğer</option>
-          </select>
+            <p className="form-baslik">Kullanım Türünü Seçiniz</p>
+            <select value={kullanimTuru} onChange={e => setKullanimTuru(e.target.value)} >
+              <option value="" disabled hidden>Örn. Sınav</option>
+              <option value="Sınav">Sınav</option>
+              <option value="Ders">Ders</option>
+              <option value="Etkinlik">Etkinlik</option>
+              <option value="Sunum">Sunum</option>
+              <option value="Toplantı">Toplantı</option>
+              <option value="Diğer">Diğer</option>
+            </select>
 
-          <p className="form-baslik">Rezervasyon Başlığı</p>
-          <input
-            type="text"
-            placeholder="Örn. Fizik -2 Sınavı..."
-            value={baslik}
-            onChange={e => setBaslik(e.target.value)}
-          />
+            <p className="form-baslik">Rezervasyon Başlığı</p>
+            <input
+              type="text"
+              placeholder="Örn. Fizik -2 Sınavı..."
+              value={baslik}
+              onChange={e => setBaslik(e.target.value)}
+            />
 
-          <p className="form-baslik">Rezervasyon Açıklaması</p>
-          <textarea
-            placeholder="Örn. Bilgisayar Mühendisliği bölümü Fizik -2 sınavı yapılacaktır."
-            value={aciklama}
-            onChange={e => setAciklama(e.target.value)}
-          />
-        </div>
+            <p className="form-baslik">Rezervasyon Açıklaması</p>
+            <textarea
+              className="rezervasyon-aciklama-textarea"
+              placeholder="Örn. Bilgisayar Mühendisliği bölümü Fizik -2 sınavı yapılacaktır."
+              value={aciklama}
+              onChange={e => setAciklama(e.target.value)}
+            />
+            <button className="rezervasyon-olustur-butonu" type="submit" disabled={loading}>
+              {loading ? 'Gönderiliyor...' : 'Rezervasyonu Oluştur'}
+            </button>
+          </div>
 
-        <div className="form-sag">
-          <div className="takvim-grup">
-            <div className="takvim-kapsayici">
-              <div className="takvim-ust">
-                <button type="button" onClick={oncekiAy}>&lt;</button>
-                <span>{aylar[ay]} {yil}</span>
-                <button type="button" onClick={sonrakiAy}>&gt;</button>
-              </div>
-              <div className="takvim-gunler">
-                {gunler.map((g, i) => (
-                  <div
-                    key={i}
-                    className={`gun-etiketi${i === 5 || i === 6 ? ' haftasonu' : ''}`}
-                  >
-                    {g}
-                  </div>
-                ))}
-
-                {tarihleriHazirla().flat().map((g, i) => {
-                  if (!g) {
-                    return <div key={i} className="bos-gun" />;
-                  }
-                  const haftaninGunu = i % 7;
-                  const isBugun = g === bugunGun;
-                  return (
+          <div className="form-sag">
+            <div className="takvim-grup">
+              <div className="takvim-kapsayici">
+                <div className="takvim-ust">
+                  <button type="button" onClick={oncekiAy}>&lt;</button>
+                  <span>{aylar[ay]} {yil}</span>
+                  <button type="button" onClick={sonrakiAy}>&gt;</button>
+                </div>
+                <div className="takvim-gunler">
+                  {gunler.map((g, i) => (
                     <div
                       key={i}
-                      className={`gun-kutusu-tarih${isBugun ? ' bugun' : ''}${haftaninGunu === 5 || haftaninGunu === 6 ? ' haftasonu' : ''}${seciliTarih === g ? ' secili-tarih' : ''}`}
-                      onClick={() => {
-                        setSeciliTarih(g);
-                        rezervasyonlariGetir(g, sinif);
-                      }}
-                      style={{ fontWeight: seciliTarih === g ? 'bold' : 'normal' }}
+                      className={`gun-etiketi${i === 5 || i === 6 ? ' haftasonu' : ''}`}
                     >
                       {g}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  ))}
 
-            {/* Saat ve Rezervasyon Grupları */}
-            <div className="saat-ve-rezervasyon-gruplari">
-              <div className="saat-grubu">
-                <div className="saat-baslik">Saat Aralığını Seçiniz</div>
-                <div className="saat-secimi">
-                  <select value={baslangicSaati} onChange={e => setBaslangicSaati(e.target.value)}>
-                    {saatler24.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                  <select value={bitisSaati} onChange={e => setBitisSaati(e.target.value)}>
-                    {saatler24.map(s => <option key={s}>{s}</option>)}
-                  </select>
+                  {tarihleriHazirla().flat().map((g, i) => {
+                    if (!g) {
+                      return <div key={i} className="bos-gun" />;
+                    }
+                    const haftaninGunu = i % 7;
+                    const isBugun = g === bugunGun;
+                    return (
+                      <div
+                        key={i}
+                        className={`gun-kutusu-tarih${isBugun ? ' bugun' : ''}${haftaninGunu === 5 || haftaninGunu === 6 ? ' haftasonu' : ''}${seciliTarih === g ? ' secili-tarih' : ''}`}
+                        onClick={() => {
+                          setSeciliTarih(g); // Sadece günü güncelle, diğer alanları sıfırlama
+                          rezervasyonlariGetir(g, fakulte);
+                        }}
+                        style={{ fontWeight: seciliTarih === g ? 'bold' : 'normal' }}
+                      >
+                        {g}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="secili-saat-araligi">
-                  {baslangicSaati} - {bitisSaati} Saatleri Rezervasyon İçin Seçilidir
+              </div>
+
+              {/* Saat ve Rezervasyon Grupları */}
+              <div className="saat-ve-rezervasyon-gruplari">
+                <div className="saat-grubu">
+                  <div className="saat-baslik">Saat Aralığını Seçiniz</div>
+                  <div className="saat-secimi">
+                    <select value={baslangicSaati} onChange={e => setBaslangicSaati(e.target.value)}>
+                      {saatler24.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                    <select value={bitisSaati} onChange={e => setBitisSaati(e.target.value)}>
+                      {saatler24.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="secili-saat-araligi">
+                    {baslangicSaati} - {bitisSaati} Saatleri Rezervasyon İçin Seçilidir
+                  </div>
+                </div>
+
+                <div className="rezervasyon-grubu">
+                  <h3>Seçilen Gün ve Fakülteye Ait Mevcut Rezervasyonlar</h3>
+                  <div className="rezervasyon-kartlar-wrapper">
+                    {(!seciliTarih || !fakulte) ? null : (
+                      mevcutRezervasyonlar.length === 0 ? (
+                        <div className="rezervasyon-bos-mesaj">Bu gün ve fakültede hiç rezervasyon yok.</div>
+                      ) : (
+                        mevcutRezervasyonlar.map((r, i) => (
+                          <div className="rezervasyon-kart" key={i}>
+                            {r.startTime?.slice(0, 5)} - {r.endTime?.slice(0, 5)} | {r.salon?.name} | {r.user?.firstName} {r.user?.lastName}
+                          </div>
+                        ))
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="rezervasyon-grubu">
-                <h3>Seçilen Gün ve Salona Ait Mevcut Rezervasyonlar</h3>
-                {(!seciliTarih || !sinif) ? (
-                  <div style={{ color: '#888', fontSize: 14 }}>Gün ve salon seçiniz.</div>
-                ) : mevcutRezervasyonlar.length === 0 ? (
-                  <div style={{ color: '#888', fontSize: 14 }}>Bu gün ve salonda hiç rezervasyon yok.</div>
-                ) : (
-                  <ul>
-                    {mevcutRezervasyonlar.map((r, i) => (
-                      <li key={i}>
-                        {r.startTime?.slice(0, 5)} - {r.endTime?.slice(0, 5)} | {r.baslik} | {r.user?.firstName} {r.user?.lastName}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
             </div>
-
           </div>
         </div>
-
-        <button className="rezervasyon-olustur-butonu" type="submit" disabled={loading}>
-          {loading ? 'Gönderiliyor...' : 'Rezervasyonu Oluştur'}
-        </button>
       </form >
+      {mesaj && (
+        <div className="rezervasyon-toast" style={{
+          position: 'fixed',
+          top: 32,
+          right: 32,
+          zIndex: 9999,
+          background: (
+            mesaj.includes('Hata') ||
+            mesaj.includes('Lütfen') ||
+            mesaj.includes('Bu saat aralığında') ||
+            mesaj.includes('Başlangıç ve bitiş saati')
+          ) ? '#d32f2f' : '#4A4E68',
+          color: '#fff',
+          padding: '18px 32px',
+          borderRadius: '12px',
+          fontWeight: 600,
+          fontSize: 17,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          {mesaj}
+          {mesaj.includes('başarıyla oluşturuldu') && (
+            <span style={{ fontSize: 22, marginLeft: 6 }} role="img" aria-label="onay">✅</span>
+          )}
+        </div>
+      )}
     </div >
   );
 };

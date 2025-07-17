@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useNavigate } from 'react-router-dom';
 
 interface Rezervasyon {
     id: number;
@@ -26,6 +27,7 @@ const TumRezervasyonlar = () => {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const tableRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -320,7 +322,7 @@ const TumRezervasyonlar = () => {
                                 <td>{safeCell(r.saat)}</td>
                                 <td>
                                     <div className="action-buttons">
-                                        <button className="action-btn" title="Düzenle">
+                                        <button className="action-btn" title="Düzenle" onClick={() => navigate(`/rezervasyon-duzenle/${r.id}`)}>
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 21h17" stroke="#6A6A65" strokeWidth="1.5" strokeLinecap="round" /><path d="M17.804 3.553a2.013 2.013 0 0 1 2.85 2.846l-9.5 9.5-3.5.654.654-3.5 9.496-9.5Z" stroke="#6A6A65" strokeWidth="1.5" strokeLinejoin="round" /></svg>
                                         </button>
                                         <button className="action-btn" title="Sil" onClick={() => handleDeleteClick(r.id)}>

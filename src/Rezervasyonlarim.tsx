@@ -123,7 +123,7 @@ const Rezervasyonlarim = () => {
         try {
             const token = localStorage.getItem('token');
             const headers: any = token ? { 'Authorization': 'Bearer ' + token } : {};
-            const res = await fetch(`http://10.15.0.13:8080/rezervasyonlar/${deleteId}`, {
+            const res = await fetch(`http://10.15.0.15:8080/rezervasyonlar/${deleteId}`, {
                 method: 'DELETE',
                 headers
             });
